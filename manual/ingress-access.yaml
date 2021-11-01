@@ -1,0 +1,78 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mynamespace-user
+  namespace: mynamespace
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: mynamespace-user-full-access
+  namespace: mynamespace
+rules:
+- apiGroups: ["", "extensions", "apps"]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["batch"]
+  resources:
+  - jobs
+  - cronjobs
+  verbs: ["*"]
+- apiGroups: ["networking.k8s.io"]
+  resources:
+  - ingresses
+  verbs: ["*"]
+- apiGroups: ["policy"]
+  resources:
+  - poddisruptionbudgets
+  verbs: ["*"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates"]
+  verbs: ["*"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: mynamespace-user-view
+  namespace: mynamespace
+subjects:
+- kind: ServiceAccount
+  name: mynamespace-user
+  namespace: mynamespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: mynamespace-user-full-access
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  # "namespace" omitted since ClusterRoles are not namespaced
+  name: clusterroles-access
+rules:
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles", "clusterrolebindings", "roles", "rolebindings"]
+  verbs: ["*"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+  verbs: ["*"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["*"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["clusterissuers"]
+  verbs: ["*"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: clusterroles-access-binding
+subjects:
+- kind: ServiceAccount
+  name: mynamespace-user
+  namespace: mynamespace
+roleRef:
+  kind: ClusterRole
+  name: clusterroles-access
+  apiGroup: rbac.authorization.k8s.io
